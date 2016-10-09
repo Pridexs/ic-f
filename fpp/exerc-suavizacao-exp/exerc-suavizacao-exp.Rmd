@@ -55,3 +55,111 @@ min(tcm10y.training.ses1$residuals)
 
 accuracy(tcm10y.training.ses1, tcm10y.test)
 ```
+
+> (e) Usando a série de treinamento, ajuste um modelo SES com o $\alpha$ encontrado automaticamente pelo R. Compare o SSE deste modelo com o SSE do modelo do item 1c.
+
+```{r}
+tcm10y.training.ses2 <- ses(tcm10y.training, h=20)
+tcm10y.training.ses2$model$par;
+
+plot(tcm10y.training.ses2, plot.conf=FALSE);
+lines(fitted(tcm10y.training.ses2), col="red")
+legend("topleft",lty=1, col=c(1,"red"), c("data", expression(alpha == 0.9999)))
+
+# ses1 alpha = 0.2
+(SSE.ses1 = sum(tcm10y.training.ses1$residuals^2))
+# ses2 alpha = 0.999900
+(SSE.ses2 = sum(tcm10y.training.ses2$residuals^2))
+```
+
+O modelo com $\alpha$ encontrado automaticamente gerou um modelo que se ajusta aos dados de treinamento de uma forma muito melhor, como era de se esperar.
+
+> (f) Faça um gráfico com o modelo ajustado no item anterior sobreposto à série original, e comente sobre a adequação do modelo, comparando-o com o modelo do item 1c.
+
+```{r}
+plot(tcm10y.test, main="Test set com previsão SES", ylim=c(4.6, 6.1))
+lines(tcm10y.training.ses1$mean, col="red")
+lines(tcm10y.training.ses2$mean, col="blue")
+legend("bottomright",lty=1, col=c(1,"red", "blue"), c("test set", expression(alpha == 0.2), expression(alpha == 0.999900)))
+```
+
+O modelo com $\alpha = 0.999900$ claramente teve uma melhor performance comparado com o SES aplicado com $\alpha = 0.2$
+
+> (g) Qual o valor de α encontrado pelo R no modelo do item 1e? Como o modelo correspondente pode ser interpretado?
+
+O valor encontrado foi $\alpha = 0.999900$.
+
+Com um alpha perto do 1 temos que as observações passadas não tem tanta importância ao prever os próximos valores, logo uma conclusão para essa série é que ela não possui um comportamento tão estável e deve-se levar em conta apenas as observações próximas do valor que queremos encontrar.
+
+### 2. O arquivo cheese.dat contém dados sobre a produção anual de queijo dos tipos azul e gorgonzola nos EUA.
+
+> (a) Importe os dados no R e crie uma série cheese com os seguintes comandos:
+
+```{r}
+cheese.dat <- read.table("/home/pridexs/ic-f/fpp/exerc-suavizacao-exp/cheese.dat", header=TRUE)
+cheese <- ts(cheese.dat$production, freq=1, start=1950)
+```
+
+> (b) Faça um gráfico da série e discuta suas caracterı́sticas.
+
+```{r}
+plot(cheese)
+```
+
+A série não tem nenhuma sazonalidade aparente, nem ciclos.
+
+Possui uma tendência linear crescente ao longo dos anos.
+
+> (c) Divida a série em uma série de treinamento com 40 observações e uma série de testes com
+8 observações.
+
+```{r}
+cheese.training <- window(cheese, end=c(1989))
+cheese.test <- window(cheese, start=c(1990))
+```
+
+> (d) Usando a série de treinamento, ajuste um modelo SES com o α encontrado automaticamente pelo R. Faça um gráfico com o modelo ajustado sobreposto à série original, e comente sobre a adequação do modelo.
+
+```{r}
+cheese.ses <- ses(cheese.training, h=8)
+cheese.ses$model$par
+plot(cheese.training, main="cheese")
+lines(fitted(cheese.ses), col="red")
+legend("bottomright",lty=1, col=c(1,"red"), c("data", expression(alpha == 0.9999)))
+```
+
+<comentario>
+
+> (e) Gere 8 previsões um passo à frente usando as observações da série de testes. Determine o maior e menor resı́duo, e calcule o MAPE para esse conjunto de previsões.
+
+```{r}
+accuracy(cheese.ses)
+max(cheese.ses$residuals)
+min(cheese.ses$residuals)
+```
+
+> (f) Usando a série de treinamento, ajuste um modelo linear de Holt, com coeficientes encontrados automaticamente pelo R. Compare o SSE deste modelo com o SSE do modelo do item 2d.
+
+```{r}
+cheese.holt <- holt(cheese.training, h=8)
+
+plot(cheese.training)
+lines(fitted(cheese.ses), col="red")
+lines(fitted(cheese.holt), col="blue")
+legend("bottomright",lty=1, col=c(1,"red", "blue"), c("data", "ses", "holt"))
+
+(cheese.ses.sse <- sum(cheese.ses$residuals^2))
+(cheese.holt.sse <- sum(cheese.holt$residuals^2))
+```
+
+> (g) Faça um gráfico com o modelo ajustado no item anterior sobreposto à série original, e comente sobre a adequação do modelo, comparando-o com o modelo do item 2d.
+
+```{r}
+plot(cheese.test, main="Cheese Test Series")
+lines(cheese.ses$mean, col="red")
+lines(cheese.holt$mean, col="blue")
+legend("topleft",lty=1, col=c(1,"red", "blue"), c("data", "ses", "holt"))
+
+accuracy(cheese.ses, cheese.test)
+accuracy(cheese.holt, cheese.test)
+```
