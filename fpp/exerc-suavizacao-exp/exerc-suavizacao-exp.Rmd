@@ -1,29 +1,57 @@
 ---
-title: "exerc-suavizacao"
+title: "exerc-suavizacao-exp"
 output: html_document
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-
+library(tseries)
+library(fpp)
+data(tcm)
 ```
 
-## R Markdown
+##### 1. A série tcm10y registra a taxa de retorno de mercado de tı́tulos do Tesouro dos EUA com maturidade constante de 10 anos.
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+> (a) Faça um gráfico da série e discuta suas caracterı́sticas. Para ter acesso à série, use os comandos
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
+```{r}
+plot(tcm10y)
 ```
 
-## Including Plots
+A série inteira não tem um comportamento sazonal aparente, embora se isolarmos pequenas partes da série podemos ver uma espécie de comportamento sazonal.
 
-You can also embed plots, for example:
+Possui uma tendência não linear que sobe até o ano de (aproximadamente) 1982, após isso a tendência começa a cair.
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+Nenhum comportamento cíclico.
+
+> (b) Divida a série em uma série de treinamento com 538 observações e uma série de testes com 20 observações.
+
+```{r}
+tcm10y.test <- window(tcm10y, start=c(1998, 2))
+tcm10y.training <- window(tcm10y, end=c(1998,1))
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+> (c) Usando a série de treinamento, ajuste um modelo SES com α = 0,2. Faça um gráfico com o modelo ajustado sobreposto à série original, e comente sobre a adequação do modelo
+
+```{r}
+tcm10y.training.ses1 <- ses(tcm10y.training, alpha=0.2, h=20)
+plot(tcm10y.training.ses1, plot.conf=FALSE)
+lines(fitted(tcm10y.training.ses1), col="red")
+
+legend("topleft",lty=1, col=c(1,"red"), c("data", expression(alpha == 0.2)))
+```
+
+O modelo ses com $\alpha = 0.2$ se adequou bem a serie original.
+
+> (d) Gere 20 previsões um passo à frente usando as observações da série de testes. Determine o maior e menor resı́duo, e calcule o RMSE para esse conjunto de previsões.
+
+```{r}
+plot(tcm10y.test, ylim=c(4.5, 6.2))
+lines(tcm10y.training.ses1$mean, col="red")
+legend("bottomright",lty=1, col=c(1,"red"), c("test set", expression(alpha == 0.2)))
+
+max(tcm10y.training.ses1$residuals)
+min(tcm10y.training.ses1$residuals)
+
+accuracy(tcm10y.training.ses1, tcm10y.test)
+```
