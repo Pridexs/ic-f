@@ -18,7 +18,7 @@ data(tcm)
 plot(tcm10y)
 ```
 
-A série inteira não tem um comportamento sazonal aparente, embora se isolarmos pequenas partes da série podemos ver uma espécie de comportamento sazonal.
+A série não tem um comportamento sazonal aparente.
 
 Possui uma tendência não linear que sobe até o ano de (aproximadamente) 1982, após isso a tendência começa a cair.
 
@@ -39,9 +39,12 @@ plot(tcm10y.training.ses1, plot.conf=FALSE)
 lines(fitted(tcm10y.training.ses1), col="red")
 
 legend("topleft",lty=1, col=c(1,"red"), c("data", expression(alpha == 0.2)))
+
+#plot(tcm10y.training.ses1, plot.conf=FALSE, xlim=c(1980,1989), ylim=c(6.5,15))
+#lines(fitted(tcm10y.training.ses1), col="red")
 ```
 
-O modelo ses com $\alpha = 0.2$ se adequou bem a serie original.
+O modelo ses com $\alpha = 0.2$ não se adequou tão bem aos dados.
 
 > (d) Gere 20 previsões um passo à frente usando as observações da série de testes. Determine o maior e menor resı́duo, e calcule o RMSE para esse conjunto de previsões.
 
@@ -90,12 +93,8 @@ O modelo com $\alpha$ encontrado automaticamente gerou um modelo que se ajusta a
 ```{r}
 plot(tcm10y.training.ses2, plot.conf=FALSE);
 lines(fitted(tcm10y.training.ses2), col="red")
-legend("topleft",lty=1, col=c(1,"red"), c("data", expression(alpha == 0.9999)))
-
-plot(tcm10y.test, main="Test set com previsão SES", ylim=c(4.6, 6.1))
-lines(tcm10y.training.ses1$mean, col="red")
-lines(tcm10y.training.ses2$mean, col="blue")
-legend("bottomright",lty=1, col=c(1,"red", "blue"), c("test set", expression(alpha == 0.2), expression(alpha == 0.999900)))
+lines(fitted(tcm10y.training.ses1), col="blue")
+legend("topleft",lty=1, col=c(1,"red", "blue"), c("data", expression(alpha == 0.9999), expression(alpha == 0.2)))
 ```
 
 O modelo com $\alpha = 0.999900$ claramente teve uma melhor performance comparado com o SES aplicado com $\alpha = 0.2$
@@ -105,6 +104,8 @@ O modelo com $\alpha = 0.999900$ claramente teve uma melhor performance comparad
 O valor encontrado foi $\alpha = 0.999900$.
 
 Com um alpha perto do 1 temos que as observações passadas não tem tanta importância ao prever os próximos valores, logo uma conclusão para essa série é que ela não possui um comportamento tão estável e deve-se levar em conta apenas as observações próximas do valor que queremos encontrar.
+
+Pode ser interpretado como o modelo naive.
 
 ### 2. O arquivo cheese.dat contém dados sobre a produção anual de queijo dos tipos azul e gorgonzola nos EUA.
 
