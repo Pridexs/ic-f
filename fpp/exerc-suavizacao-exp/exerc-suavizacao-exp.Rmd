@@ -53,9 +53,9 @@ O modelo ses com $\alpha = 0.2$ não se adequou tão bem aos dados.
 i <- 0
 obs <- tcm10y.test[1]
 alpha <- 0.2
-#fcast <- tcm10y.training.ses1$mean[1]
-fcast <- obs[1]
-res <- 0
+fcast <- tcm10y.training.ses1$mean[1]
+#fcast <- obs[1]
+res <- obs[1] - fcast[1]
   
 for(i in 2:20) {
   obs[i] <- tcm10y.test[i]
@@ -63,7 +63,7 @@ for(i in 2:20) {
   res[i] <- obs[i] - fcast[i]
 }
 tcm10y.fit1 <- ts(data.frame(x=obs, fitted=fcast, residuals=res), start=c(1998,2), frequency=12)
-
+tcm10y.fit1
 
 plot(tcm10y.test, type="o")
 lines(tcm10y.fit1[,"fitted"], col="red", type="o")
@@ -152,8 +152,8 @@ Mesmo com o alpha mais adequado, a série não se ajustou tão bem aos dados ori
 i <- 0
 obs <- cheese.test[1]
 alpha <- 0.9999
-fcast <- obs[1]
-res <- 0
+fcast <- cheese.ses$mean[1]
+res <- obs[1] - fcast[1]
   
 for(i in 2:8) {
   obs[i] <- cheese.test[i]
