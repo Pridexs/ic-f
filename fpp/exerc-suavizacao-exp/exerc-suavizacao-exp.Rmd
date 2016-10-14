@@ -46,14 +46,29 @@ O modelo ses com $\alpha = 0.2$ se adequou bem a serie original.
 > (d) Gere 20 previsões um passo à frente usando as observações da série de testes. Determine o maior e menor resı́duo, e calcule o RMSE para esse conjunto de previsões.
 
 ```{r}
-plot(tcm10y.test, ylim=c(4.5, 6.2))
-lines(tcm10y.training.ses1$mean, col="red")
-legend("bottomright",lty=1, col=c(1,"red"), c("test set", expression(alpha == 0.2)))
 
-max(tcm10y.training.ses1$residuals)
-min(tcm10y.training.ses1$residuals)
+i <- 0
+obs <- tcm10y.test[1]
+alpha <- 0.2
+#fcast <- tcm10y.training.ses1$mean[1]
+fcast <- obs[1]
+res <- 0
+  
+for(i in 2:20) {
+  obs[i] <- tcm10y.test[i]
+  fcast[i] <- alpha * obs[i-1] + (1-alpha) * fcast[i-1]
+  res[i] <- obs[i] - fcast[i]
+}
+tcm10y.fit1 <- ts(data.frame(x=obs, fitted=fcast, residuals=res), start=c(1998,2), frequency=12)
 
-accuracy(tcm10y.training.ses1, tcm10y.test)
+
+plot(tcm10y.test, type="o")
+lines(tcm10y.fit1[,"fitted"], col="red", type="o")
+
+max(abs(tcm10y.fit1[,"residuals"][2:20]))
+min (abs(tcm10y.fit1[,"residuals"][2:20]))
+
+(tcm10y.fit1.rmse <- sqrt(mean(tcm10y.fit1[,"residuals"]^2)))
 ```
 
 > (e) Usando a série de treinamento, ajuste um modelo SES com o $\alpha$ encontrado automaticamente pelo R. Compare o SSE deste modelo com o SSE do modelo do item 1c.
@@ -61,10 +76,6 @@ accuracy(tcm10y.training.ses1, tcm10y.test)
 ```{r}
 tcm10y.training.ses2 <- ses(tcm10y.training, h=20)
 tcm10y.training.ses2$model$par;
-
-plot(tcm10y.training.ses2, plot.conf=FALSE);
-lines(fitted(tcm10y.training.ses2), col="red")
-legend("topleft",lty=1, col=c(1,"red"), c("data", expression(alpha == 0.9999)))
 
 # ses1 alpha = 0.2
 (SSE.ses1 = sum(tcm10y.training.ses1$residuals^2))
@@ -77,6 +88,10 @@ O modelo com $\alpha$ encontrado automaticamente gerou um modelo que se ajusta a
 > (f) Faça um gráfico com o modelo ajustado no item anterior sobreposto à série original, e comente sobre a adequação do modelo, comparando-o com o modelo do item 1c.
 
 ```{r}
+plot(tcm10y.training.ses2, plot.conf=FALSE);
+lines(fitted(tcm10y.training.ses2), col="red")
+legend("topleft",lty=1, col=c(1,"red"), c("data", expression(alpha == 0.9999)))
+
 plot(tcm10y.test, main="Test set com previsão SES", ylim=c(4.6, 6.1))
 lines(tcm10y.training.ses1$mean, col="red")
 lines(tcm10y.training.ses2$mean, col="blue")
@@ -133,9 +148,28 @@ Mesmo com o alpha mais adequado, a série não se ajustou tão bem aos dados ori
 > (e) Gere 8 previsões um passo à frente usando as observações da série de testes. Determine o maior e menor resı́duo, e calcule o MAPE para esse conjunto de previsões.
 
 ```{r}
-accuracy(cheese.ses, cheese.test)
-max(cheese.ses$residuals)
-min(cheese.ses$residuals)
+i <- 0
+obs <- cheese.test[1]
+alpha <- 0.9999
+fcast <- obs[1]
+res <- 0
+  
+for(i in 2:8) {
+  obs[i] <- cheese.test[i]
+  fcast[i] <- alpha * obs[i-1] + (1-alpha) * fcast[i-1]
+  res[i] <- obs[i] - fcast[i]
+}
+
+cheese.fit1 <- ts(data.frame(x=obs, fitted=fcast, residuals=res), start=c(1990), frequency=1)
+
+plot(cheese.test, type="o")
+lines(cheese.fit1[,"fitted"], col="red", type="o")
+
+max(abs(cheese.fit1[,"residuals"][2:8]))
+min (abs(cheese.fit1[,"residuals"][2:8]))
+
+(cheese.fit1.mape <- mean(abs((100*cheese.fit1[,"residuals"]/cheese.fit1[,"x"]))))
+
 ```
 
 > (f) Usando a série de treinamento, ajuste um modelo linear de Holt, com coeficientes encontrados automaticamente pelo R. Compare o SSE deste modelo com o SSE do modelo do item 2d.
@@ -170,4 +204,4 @@ Ambas as séries não se adequaram tão bem aos dados originais, tendo uma forma
 
 Holt conseguiu prever a série de forma mais adequada, ja que ele leva a tendência em consideração.
 
-Segundo os  testes de acurácia, Holt teve uma pequnea vantagem nos testes, exceto no MAPE, em que o SES teve uma vantagem.
+Segundo os  testes de acurácia, Holt teve uma pequena vantagem nos testes, exceto no MAPE, em que o SES teve uma vantagem.
