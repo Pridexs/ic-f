@@ -124,3 +124,34 @@ visitors.hw1$model$mse
 ```
 
 Holt Winters com damp obteve um resultado de acurácia melhor, logo ele deve ser melhor para prever a série. (As diferenças não foram tão significativas, logo não se pode afirmar muita coisa)
+
+> (f) Now fit each of the following models to the same data:
+
+```{r}
+# i. a multiplicative Holt-Winters' method;
+visitors.hwm <- hw(visitors, seasonal = "multiplicative", h=24)
+
+# ii. an ETS mode
+visitors.ets <- ets(visitors)
+visitors.ets.fcast <- forecast(visitors.ets, h=24)
+
+# iii. an additive ETS model applied to a Box-Cox transformed series;
+# p.s: Box-Cox pode ser aplicado nos modelos de fcast colocando lambda.
+visitors.ets.aaa <- ets(visitors, lambda = 0, model ="AAA")
+visitors.ets.aaa.fcast <- forecast(visitors.ets.aaa, h=24)
+
+# iv. a seasonal naive method applied to the Box-Cox transformed series;
+visitors.snaive <- snaive(visitors, h=24, lambda=0)
+
+# v.an STL decomposition applied to the Box-Cox transformed data followed by an ETS model applied to the seasonally adjusted (transformed) data.
+visitors.stlm <- stlm(visitors, method="ets", lambda=0)
+visitors.stlm.fcast <- forecast(visitors.stlm, h=24)
+
+plot(visitors, xlim=c(2004,2008), ylim=c(330, 650))
+lines(visitors.hwm$mean, col="blue")
+lines(visitors.ets.fcast$mean, col="red")
+lines(visitors.ets.aaa.fcast$mean, col="green")
+lines(visitors.snaive$mean, col="deeppink")
+lines(visitors.stlm.fcast$mean, col="yellow")
+
+```
