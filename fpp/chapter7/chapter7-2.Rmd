@@ -1,0 +1,126 @@
+---
+title: "chapter7-2"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+require(fpp)
+require(fma)
+```
+
+### 3.For this exercise, use the quarterly UK passenger vehicle production data from 1977:1--2005:1 (data set ukcars).
+
+> (a) Plot the data and describe the main features of the series.
+
+```{r}
+plot(ukcars)
+```
+
+Tendência que cai até mais ou menos 1982, sobe até 1988 onde fica parado até 1992 e sobe novamente até o ano de 2000, ficando sem crescrimento. Possui comportamento sazonal.
+
+> (b) Decompose the series using STL and obtain the seasonally adjusted data.
+
+```{r}
+ukcars.stl <- stl(ukcars, s.window="periodic")
+plot(ukcars.stl)
+```
+
+> (c) Forecast the next two years of the series using an additive damped trend method applied to the seasonally adjusted data. Then reseasonalize the forecasts. Record the parameters of the method and report the RMSE of the one-step forecasts from your method
+
+```{r}
+ukcars.seasadj <- seasadj(ukcars.stl)
+plot(ukcars.seasadj)
+
+ukcars.holt1 <- holt(ukcars.seasadj, damped=TRUE, h=8)
+
+plot(ukcars, xlim=c(1977, 2008))
+lines(ukcars.holt1$mean + ukcars.stl$time.series[2:9, "seasonal"], col="red")
+legend("topleft",lty=1, col=c(1,"red"), c("data", "Holt damped + Seasonality"))
+
+(ukcars.holt1.rmse <- sqrt(mean((ukcars.holt1$fitted + ukcars.stl$time.series[,"seasonal"] - ukcars)^2)))
+```
+
+> Forecast the next two years of the series using Holt's linear method applied to the seasonally adjusted data. Then reseasonalize the forecasts. Record the parameters of the method and report the RMSE of of the one-step forecasts from your method.
+
+```{r}
+ukcars.holt2 <- holt(ukcars.seasadj, h=8)
+
+plot(ukcars, xlim=c(1977, 2008))
+lines(ukcars.holt2$mean + ukcars.stl$time.series[2:9, "seasonal"], col="red")
+legend("topleft",lty=1, col=c(1,"red"), c("data", "Holt linear + Seasonality"))
+
+(ukcars.holt2.rmse <- sqrt(mean((ukcars.holt2$fitted + ukcars.stl$time.series[,"seasonal"] - ukcars)^2)))
+```
+
+> (e) Now use ets() to choose a seasonal model for the data.
+
+```{r}
+ukcars.ets <- ets(ukcars)
+ukcars.ets.fcast <- forecast(ukcars.ets)
+
+plot(ukcars.ets.fcast)
+
+(ukcars.ets.fcast.rmse <- sqrt(mean((ukcars.ets.fcast$fitted - ukcars)^2)))
+```
+
+> (f) Compare the RMSE of the fitted model with the RMSE of the model you obtained using an STL decomposition with Holt's method. Which gives the better in-sample fits?
+
+> (g) Compare the forecasts from the two approaches? Which seems most reasonable?
+
+```{r}
+# RMSE
+c(HoltDamped = ukcars.holt1.rmse, HoltLinear=ukcars.holt2.rmse, ets=ukcars.ets.fcast.rmse)
+```
+
+O melhor forecast segundo o RMSE foi o Holt Additive Damped, porém os valores são muito próximos e não se pode chegar a uma conclusão definitiva sobre qual o melhor.
+
+### 4. For this exercise, use the monthly Australian short-term overseas visitors data, May 1985--April 2005. (Data set: visitors.)
+
+> (a) Make a time plot of your data and describe the main features of the series.
+
+```{r}
+plot(visitors)
+```
+
+A série tem uma tendencia crescente e sazonalidade. Tem uma queda fora do padrão em 2004.
+
+> (b) Forecast the next two years using Holt-Winters' multiplicative method.
+
+```{r}
+visitors.hw1 <- hw(visitors, seasonal = "multiplicative", h=24)
+plot(visitors.hw1)
+```
+
+> (c) Why is multiplicative seasonality necessary here?
+
+O método multiplicativo é melhor quando as mudanças na sazonalidade são proporcinais ao aumento da tendência, o que acontece nessa série.
+
+> (d) Experiment with making the trend exponential and/or damped.
+
+```{r} 
+visitors.hwd <- hw(visitors, seasonal = "multiplicative", damped = TRUE, exponential = FALSE, h=24)
+visitors.hwe <- hw(visitors, seasonal = "multiplicative", damped = FALSE, exponential = TRUE, h=24)
+visitors.hwde <- hw(visitors, seasonal = "multiplicative", damped = TRUE, exponential = TRUE, h=24)
+plot(visitors, xlim=c(2004,2008), ylim=c(330, 650))
+lines(visitors.hwd$mean, col="blue")
+lines(visitors.hwe$mean, col="red")
+lines(visitors.hwde$mean, col="green")
+legend("topleft",lty=1, col=c(1,"blue", "red", "green"), c("data", "hw damped", "hw exponential", "hw damped + expo"))
+```
+
+As diferentes configurações mudam a forma de como a previsão se comporta, tendo menos diferença no inicio da série. Não houve tanta diferença ao usar apenas damped ou damped + exponential.
+
+> (e) Compare the RMSE of the one-step forecasts from the various methods. Which do you prefer?
+
+```{r}
+visitors.hw1$model$mse
+
+(c(HW=accuracy(visitors.hw1)[,"RMSE"],
+   HWDamp=accuracy(visitors.hwd)[,"RMSE"],
+   HWExp=accuracy(visitors.hwe)[,"RMSE"],
+   HWDampExp=accuracy(visitors.hwde)[,"RMSE"]))
+
+```
+
+Holt Winters com damp obteve um resultado de acurácia melhor, logo ele deve ser melhor para prever a série. (As diferenças não foram tão significativas, logo não se pode afirmar muita coisa)
