@@ -155,3 +155,37 @@ lines(visitors.snaive$mean, col="deeppink")
 lines(visitors.stlm.fcast$mean, col="yellow")
 
 ```
+
+> (g) For each model, look at the residual diagnostics and compare the forecasts for the next two years. Which do you prefer?
+
+```{r}
+# hw Multiplicative
+par(mfcol=c(1,2))
+plot(visitors.hwm$residuals)
+hist(visitors.hwm$residuals)
+
+# ets method
+par(mfcol=c(1,2))
+plot(visitors.ets.fcast$residuals)
+hist(visitors.ets.fcast$residuals)
+
+# addtive ets
+par(mfcol=c(1,2))
+plot(visitors.ets.aaa.fcast$residuals)
+hist(visitors.ets.aaa.fcast$residuals)
+
+# sesasonal naive
+par(mfcol=c(1,2))
+plot(visitors.snaive$residuals)
+hist(visitors.snaive$residuals)
+
+# stl decomp
+par(mfcol=c(1,2))
+plot(visitors.stlm.fcast$residuals)
+hist(visitors.stlm.fcast$residuals)
+
+```
+
+O modelo seasonal naive foi o pior de todos (esta longe de estar normalmente distribuido e os dados parecem ter correlacao)
+
+Os outros modelos estão mais adequados, possivelmente o melhor de todos é o útlimo já que eles está melhor distribuido e com os menores resíduos.
