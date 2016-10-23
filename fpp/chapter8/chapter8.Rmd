@@ -1,0 +1,158 @@
+---
+title: "chapter8"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+require(fpp)
+require(fma)
+```
+
+### 1. Figure 8.24 shows the ACFs for 36 random numbers, 360 random numbers and for 1,000 random number
+
+> (a) Explain the differences among these figures. Do they all indicate the data are white noise?
+> (b) Why are the critical values at different distances from the mean of zero? Why are the autocorrelations different in each figure when they each refer to white noise?
+
+1. Sim, as 3 figuras indicam que que os dados são white noise (nenhum pico fora da região critica, nenhum padrão evidente)
+2. Os valores críticos mudam pois há diferentes quantidades de observações em cada set. Quanto mais observações, menos white noise se tem, logo a região critíca deve ser menor para verificar se realmente os dados são white-noise.
+
+### 2. A classic example of a non-stationary series is the daily closing IBM stock prices (data set ibmclose). Use R to plot the daily closing prices for IBM stock and the ACF and PACF. Explain how each plot shows the series is non-stationary and should be differenced.
+
+```{r}
+plot(ibmclose)
+par(mfrow=c(1,2))
+acf(ibmclose)
+pacf(ibmclose)
+```
+
+1. ACF: A demora para cair para 0 mostra que a série não é estacionária e deve ser diferenciada.
+2. PACF: Quando o primeiro valor é proximo de um e os demais estão entre a linha crítica é sinal de que a série deve ser diferenciada.
+
+### 3. For the following series, find an appropriate Box-Cox transformation and order of differencing in order to obtain stationary data.
+
+> usnetelec
+
+```{r}
+par(mfrow=c(1,1))
+plot(usnetelec)
+usnetelec.lambda <- BoxCox.lambda(usnetelec)
+usnetelec.boxcox <- BoxCox(usnetelec, lambda=usnetelec.lambda)
+usnetelec.diff <- diff(usnetelec.boxcox)
+plot (usnetelec.diff)
+par(mfrow=c(1,2))
+Acf(usnetelec.diff, main="ACF usnetelec com Box-Cox")
+Acf(diff(usnetelec), main="ACF usnetelec sem Box-Cox")
+Pacf(usnetelec.diff, main="PACF usnetelec com Box-Com")
+Pacf(diff(usnetelec), main="PACF usnetelec sem Box-Cox")
+```
+
+* A série não é sazonal logo não é necessário aplicar o diff com lag.
+* Usando diff uma vez foi o suficiente, aplicação do Box-Cox ajuda na stacionariedade (O autor não realizou a transformação)
+
+> usgdp
+
+```{r}
+par(mfrow=c(1,1))
+plot(usgdp)
+usgdp.lambda <- BoxCox.lambda(usgdp)
+usgdp.boxcox <- BoxCox(usgdp, lambda=usgdp.lambda)
+usgdp.diff <- diff(usgdp.boxcox)
+plot (usgdp.diff)
+par(mfrow=c(1,2))
+Acf(usgdp.diff)
+Pacf(usgdp.diff)
+```
+
+* Série não sazonal
+* Box-Cox + diff foi o suficiente para deixar ACF como white-noise (embora tenha alguns picos fora da região crítica)
+
+> mcopper
+
+```{r}
+par(mfrow=c(1,1))
+plot(mcopper)
+mcopper.lambda <- BoxCox.lambda(mcopper)
+mcopper.boxcox <- BoxCox(mcopper, lambda=mcopper.lambda)
+plot(mcopper.boxcox)
+mcopper.diff <- diff(mcopper.boxcox)
+plot (mcopper.diff)
+par(mfrow=c(1,2))
+Acf(mcopper.diff)
+Pacf(mcopper.diff)
+```
+
+* ACF cai para 0 rapidamente
+* PACF e ACF possui alguns valores fora da região crítica mas pode ser considerado estacionária
+
+> enplanements
+
+```{r}
+par(mfrow=c(1,1))
+plot(enplanements)
+Acf(enplanements)
+enplanements.lambda <- BoxCox.lambda(enplanements)
+enplanements.boxcox <- BoxCox(enplanements, lambda=enplanements.lambda)
+enplanements.diff <- diff(enplanements.boxcox, lag=12)
+plot (enplanements.diff)
+par(mfrow=c(1,2))
+Acf(enplanements.diff)
+Pacf(enplanements.diff)
+```
+
+* Aqui temos um comportamento sazonal com frequencia anual, logo diff(, lag=12)
+* acf ainda mostra que não está estacionaria
+
+```{r}
+enplanements.diff2 <- diff(diff(enplanements.boxcox), lag=12)
+par(mfrow=c(1,1))
+plot(enplanements.diff2)
+Acf(enplanements.diff2, lag.max=80)
+Pacf(enplanements.diff2, lag.max=80)
+```
+
+* Agora, embora a pontos fora da região crítica, a série parece estar estacionaria (acf caindo para 0 rapidamente, PACF sem um pico chegando a 1)
+
+> visitors
+
+```{r}
+par(mfrow=c(1,1))
+plot(visitors)
+visitors.lambda <- BoxCox.lambda(visitors)
+visitors.boxcox <- BoxCox(visitors, lambda=visitors.lambda)
+Acf(visitors.boxcox)
+```
+
+* Sazonalidade anual (lag=12)
+
+```{r}
+visitors.diff <- diff(visitors.boxcox, lag=12)
+plot (visitors.diff)
+par(mfrow=c(1,2))
+Acf(visitors.diff)
+Pacf(visitors.diff)
+```
+
+* Um diff não foi suficiente, ACF não cai rapidamente para 0, PACF com pico alto em 0
+
+```{r}
+visitors.diff2 <- diff(diff(visitors.boxcox), lag=12)
+par(mfrow=c(1,1))
+plot(visitors.diff2)
+Acf(visitors.diff2, lag.max=80)
+Pacf(visitors.diff2, lag.max=80)
+```
+
+* Tanto o ACF e o PACF mostram grandes picos foram da zona crítica
+* Não apresentam um padrão
+* Pode ser considerado como estacionaria(?)
+
+### (4) For the enplanements data, write down the differences you chose above using backshift operator notation.
+
+$(1-B)(1-B^{12})y_t$
+
+
+### Dúvidas
+
+1. Por que aplicar a sazonalidade somente no ultimo dif?
+  * diff(diff(serie), lag=12)
