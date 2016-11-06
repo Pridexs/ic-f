@@ -151,8 +151,83 @@ Pacf(visitors.diff2, lag.max=80)
 
 $(1-B)(1-B^{12})y_t$
 
+### (5) Use R to simulate and plot some data from simple ARIMA models.
 
-### Dúvidas
+> a) Use the following R code to generate data from an AR(1) model with $\phi_1=0.6$ and $\sigma^2=1$. The process starts with $y_0 = 0$.
 
-1. Por que aplicar a sazonalidade somente no ultimo dif?
-  * diff(diff(serie), lag=12)
+> b) Produce a time plot for the series. How does the plot change as you change $\phi_1$?
+
+```{r}
+e <- rnorm(100)
+AR1 = function(e, phi)
+{
+  y <- ts(numeric(100))
+  for(i in 2:100) {
+    y[i] <- phi*y[i-1] + e[i]
+  }
+  return(y)
+}
+plot(AR1(e, 0.6))
+plot(AR1(e, -0.8))
+plot(AR1(e, -0.3))
+plot(AR1(e, 0))
+plot(AR1(e, 0.3))
+plot(AR1(e, 0.8))
+```
+
+* Para $\phi < 0$ temos grandes picos já que os valores anteriores estão sendo negados.
+* Quando $\phi > 0$ as previsões tendem a ser mais parecidas com o valor anterior.
+
+> c) Write your own code to generate data from an MA(1) model with $\theta_1=0.6$ and $\sigma^2=1$.
+
+> d) Produce a time plot for the series. How does the plot change as you change θ1θ1?
+
+```{r}
+MA1 = function(e, theta)
+{
+  y <- ts(numeric(100))
+  for(i in 2:100) {
+    y[i] <- e[i] + theta*e[i-1]
+  }
+  return(y)
+}
+
+plot(MA1(e, 0.6))
+plot(MA1(e, -0.8))
+plot(MA1(e, 0.8))
+```
+
+> e) Generate data from an ARMA(1,1) model with $\phi_1$ = 0.6 and $\theta_1=0.6$ and $\sigma^2=1$.
+
+```{r}
+ARMA11 = function(e, phi, theta)
+{
+  y <- ts(numeric(100))
+  for(i in 2:100) {
+    y[i] <- (phi * y[i-1]) + (theta * e[i-1]) + e[i]
+  }
+  return(y)
+}
+
+
+plot(ARMA11(e, 0.6, 0.6))
+```
+
+> f) Generate data from an AR(2) model with $\phi_1=−0.8$ and $\phi_2=0.3$.
+
+> g) Graph the latter two series and compare them.
+
+```{r}
+AR2 = function(e, phi1, phi2)
+{
+  y <- ts(numeric(100))
+  for(i in 3:100) {
+    y[i] <- (phi1 * y[i-1]) + (phi2 * y[i-2]) + e[i]
+  }
+  return(y)
+}
+
+plot(AR2(e, -0.8, 0.3))
+```
+
+ARMA11 está dentro de um limite e segue os padrões da série. Já o AR2 está completamente fora dos limites.
