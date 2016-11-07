@@ -231,3 +231,86 @@ plot(AR2(e, -0.8, 0.3))
 ```
 
 ARMA11 está dentro de um limite e segue os padrões da série. Já o AR2 está completamente fora dos limites.
+
+### (6) Consider the number of women murdered each year (per 100,000 standard population) in the United States (data set wmurders).
+
+> a) By studying appropriate graphs of the series in R, find an appropriate ARIMA(p,d,qp,d,q) model for these data.
+
+```{r}
+plot(wmurders)
+
+wmurders.lambda <- BoxCox.lambda(wmurders)
+wmurders.boxcox <- BoxCox(wmurders, lambda=wmurders.lambda)
+
+plot(wmurders.boxcox)
+acf(wmurders.boxcox, lag.max=100)
+pacf(wmurders.boxcox, lag.max=100)
+```
+
+Os resultados do ACF e do PACF mostram que a série não é estacionario, logo devemos diferenciala (d++)
+
+Como não temos sazonalidade, não precisamos se preocupar com o lag
+
+```{r}
+plot(diff(wmurders.boxcox))
+acf(diff(wmurders.boxcox), lag.max=100)
+pacf(diff(wmurders.boxcox), lag.max=100)
+```
+
+O pico no lag2 tanto no ACF como no PACF sugere que devemos aplicar um modelo AR(2) ou MA(2).
+
+Logo deve-se aplicar um modelo ARIMA(0,1,2) ou ARIMA(2,1,0)
+
+Escolherei ARIMA(0,1,2)
+
+> b) Should you include a constant in the model? Explain.
+
+?
+
+> c) Write this model in terms of the backshift operator.
+
+$(1 - B)y_t = (1 + \theta_1B + \theta_2B^2)e_t$
+
+> d) Fit the model using R and examine the residuals. Is the model satisfactory?
+
+```{r}
+(wmurders.arima <- Arima(wmurders, c(0,1,2), lambda=wmurders.lambda))
+
+wmurders.arima.res <- residuals(wmurders.arima)
+
+acf(wmurders.arima.res, lag.max=50)
+pacf(wmurders.arima.res, lag.max=50)
+hist(wmurders.arima.res)
+
+Box.test(wmurders.arima.res, type="L")
+shapiro.test(wmurders.arima.res)
+```
+
+Os dados parecem ser white no ACF e no PACF e o teste de Ljung nos da uma certeza maior.
+
+Também parecem estar normalmente-distribuidos, o que o teste de shapiro comprova.
+
+Logo, pode ser dito que o modelo se adequou aos dados.
+
+> e) Forecast three times ahead. Check your forecasts by hand to make sure you know how they have been calculated.
+
+```{r}
+
+wmurders.arima.fcast <- forecast (wmurders.arima, h=3)
+plot (wmurders.arima.fcast)
+
+```
+
+> f) Create a plot of the series with forecasts and prediction intervals for the next three periods shown.
+
+> g) Does auto.arima give the same model you have chosen? If not, which model do you think is better?
+
+```{r}
+(wmurders.autoarima <- auto.arima(wmurders, lambda=wmurders.lambda))
+plot(forecast(wmurders.autoarima, h=3))
+```
+
+auto.arima escolheu o  modelo ARIMA(1,2,1).
+
+É dificil dizer qual modelo é o melhor, o auto.arima escolheu um modelo que apresenta uma tendencia decrescente, mas não parece muito que os dados vão continuar caindo linearmente como o forecast mostra, logo o melhor modelo provavelmente é o ARIMA(0,1,2)
+
