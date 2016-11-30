@@ -143,7 +143,7 @@ Acf(visitors.diff2, lag.max=80)
 Pacf(visitors.diff2, lag.max=80)
 ```
 
-* Tanto o ACF e o PACF mostram grandes picos foram da zona crítica
+* Tanto o ACF e o PACF mostram grandes picos fora da zona crítica
 * Não apresentam um padrão
 * Pode ser considerado como estacionaria(?)
 
@@ -299,7 +299,12 @@ Logo, pode ser dito que o modelo se adequou aos dados.
 wmurders.arima.fcast <- forecast (wmurders.arima, h=3)
 plot (wmurders.arima.fcast)
 
+log(wmurders)
+wmurders.arima$residuals
 ```
+
+(By hand no caderno)
+Coeficientes: -0.09 e 0.37
 
 > f) Create a plot of the series with forecasts and prediction intervals for the next three periods shown.
 
@@ -314,3 +319,167 @@ auto.arima escolheu o  modelo ARIMA(1,2,1).
 
 É dificil dizer qual modelo é o melhor, o auto.arima escolheu um modelo que apresenta uma tendencia decrescente, mas não parece muito que os dados vão continuar caindo linearmente como o forecast mostra, logo o melhor modelo provavelmente é o ARIMA(0,1,2)
 
+### (7) Consider the quarterly number of international tourists to Australia for the period 1999–2010. (Data set austourists.)
+
+> a) Describe the time plot
+
+```{r} 
+plot(austourists)
+```
+
+Série sazonal com tendência crescente. Sazonlidade de 12 meses. Alguns valores fora do padrão entre 2001 e 2003.
+
+A sazonlidade parece aumentar conforme a série cresce, logo teremos que aplicar uma transformaçao na mesma.
+
+> b) What can you learn from the ACF graph?
+> c) What can you learn from the PACF graph?
+
+```{r}
+laustourists <- log(austourists)
+plot(laustourists)
+Acf(laustourists)
+Pacf(laustourists)
+```
+
+Acf não cai rapidamente para zero, o que sugere que é necessário diferenciar.
+
+Pacf ?
+
+> d) Produce plots of the seasonally differenced data $(1−B^4)Y_t$. What model do these graphs suggest?
+
+```{r}
+plot(diff(laustourists, 4))
+Acf(diff(laustourists, 4))
+Pacf(diff(laustourists, 4))
+```
+
+AR(1), MA(1)
+ARIMA(0,1,1)(0,0,1) ou ARIMA(1,1,0)(0,0,1)
+
+#### 8. Consider the total net generation of electricity (in billion kilowatt hours) by the U.S. electric industry (monthly for the period 1985–1996). (Data set usmelec.) In general there are two peaks per year: in mid-summer and mid-winter.
+
+> a) Examine the 12-month moving average of this series to see what kind of trend is involved.
+> b) Do the data need transforming? If so, find a suitable transformation.
+
+```{r}
+plot(usmelec)
+lines(ma(usmelec, 12), col="red")
+```
+
+Sim, elas precisam ser transformadas pois a dimensão da sazonalidade aumenta conforme a série vai crescendo.
+
+```{r} 
+usmelec.lambda <- BoxCox.lambda(usmelec)
+usmelec.lambda
+```
+
+Como o lambda é considerável, não fazemos uma simples transformação logarítimica.
+
+```{r}
+usmelec2 <- BoxCox(usmelec, usmelec.lambda)
+plot(usmelec2)
+```
+
+> Are the data stationary? If not, find an appropriate differencing which yields stationary data.
+
+Não, os dados claramente não são estacionários.
+
+```{r}
+usmelec.diff <- diff(usmelec, lag=12)
+tsdisplay(usmelec.diff)
+```
+
+Os dados parecem estar estacionários (embora talvez o ACF demore um pouco para cair a zero)
+
+> d) Identify a couple of ARIMA models that might be useful in describing the time series. Which of your models is the best according to their AIC values?
+
+ARIMA(1,0,0)(0,1,1)
+ARIMA(2,0,0)(0,1,1)
+ARIMA(1,0,1)(0,1,1)
+ARIMA(0,0,1)(0,1,1)
+
+```{r}
+usmelec.f1 <- Arima(usmelec, c(1,0,0), c(0,1,1), lambda = usmelec.lambda)
+usmelec.f2 <- Arima(usmelec, c(2,0,0), c(0,1,1), lambda = usmelec.lambda)
+usmelec.f3 <- Arima(usmelec, c(1,0,1), c(0,1,1), lambda = usmelec.lambda)
+usmelec.f4 <- Arima(usmelec, c(0,0,1), c(0,1,1), lambda = usmelec.lambda)
+usmelec.f5 <- Arima(usmelec, c(3,0,0), c(0,1,1), lambda = usmelec.lambda)
+usmelec.f6 <- Arima(usmelec, c(1,0,2), c(0,1,1), lambda = usmelec.lambda)
+usmelec.f6 <- Arima(usmelec, c(1,0,2), c(0,1,1), lambda = usmelec.lambda)
+
+
+c(usmelec.f1$aicc, usmelec.f2$aicc, usmelec.f3$aicc, usmelec.f4$aicc, usmelec.f5$aicc, usmelec.f6$aicc)
+```
+
+O menor valor é o fit6: ARIMA(1,0,2)(0,1,1)
+
+> e) Estimate the parameters of your best model and do diagnostic testing on the residuals. Do the residuals resemble white noise? If not, try to find another ARIMA model which fits better.
+
+```{r}
+tsdisplay(usmelec.f6$residuals)
+hist(usmelec.f6$residuals)
+Box.test(usmelec.f6$residuals, lag=24, type="Lj", fitdf=4 )
+```
+
+Embora tenha 1 pico considerável tanto no ACF quanto no PACF, os dados parecem ser white noise. Ljung não deu uma resposta muito definitva.
+
+#### 9. For the mcopper data:
+
+> a) if necessary, find a suitable Box-Cox transformation for the data;
+> b) fit a suitable ARIMA model to the transformed data using auto.arima();
+
+```{r}
+plot(mcopper)
+mcopper.lambda <- BoxCox.lambda(mcopper)
+plot(BoxCox(mcopper, mcopper.lambda))
+(mcopper.aur <- auto.arima(mcopper, lambda = mcopper.lambda))
+```
+
+auto.arima sugere ARIMA(0,1,1)
+
+> c) try some other plausible models by experimenting with the orders chosen;
+
+ARIMA(0,1,7)
+ARIMA(0,1,5)
+ARIMA(4,1,0)
+
+
+```{r}
+Acf(diff(mcopper))
+Pacf(diff(mcopper))
+
+mcopper.f1 <- Arima(mcopper, c(0,1,7), lambda = mcopper.lambda)
+mcopper.f2 <- Arima(mcopper, c(0,1,5), lambda = mcopper.lambda)
+mcopper.f3 <- Arima(mcopper, c(4,1,0), lambda = mcopper.lambda)
+mcopper.f4 <- Arima(mcopper, c(4,1,5), lambda = mcopper.lambda)
+
+
+c(mcopper.aur$aicc, mcopper.f1$aicc, mcopper.f2$aicc, mcopper.f3$aicc, mcopper.f4$aicc)
+```
+
+O melhor método ainda é o proposto pelo auto.arima
+
+> d) choose what you think is the best model and check the residual diagnostics;
+
+```{r}
+tsdisplay(mcopper.aur$residuals)
+hist(mcopper.aur$residuals)
+Box.test(mcopper.aur$residuals, lag=12, type="Lj")
+
+```
+
+Os resíduos parecem ser white noise, e estão normalmente distribuidos, o que indica ser um bom modelo.
+
+> e) produce forecasts of your fitted model. Do the forecasts look reasonable?
+> f) compare the results with what you would obtain using ets() (with no transformation).
+
+```{r}
+mcopper.fcast <- forecast(mcopper.aur, h=20)
+plot(mcopper.fcast)
+
+mcopper.ets <- ets(mcopper)
+mcopper.ets.fcast <- forecast(mcopper.ets, h = 20)
+plot(mcopper.ets.fcast)
+```
+
+Embora as diferenças não sejam tão grandes, o ets parece ter obtido um resultado melhor.
