@@ -1,0 +1,113 @@
+---
+title: "ch5-montgomery"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+require(fpp)
+```
+
+### 5.10 Table B. I in Appendix B contains data on the market yield on U.S. Treasury Securities at 10-year constant maturity.
+
+```{r}
+data(tcm)
+plot(tcm10y)
+```
+
+> a. Fit an ARIMA model to this time series, excluding the last 20 observations. Investigate model adequacy. Explain how this model would be used for forecasting.
+
+```{r}
+tcm10y.test <- window(tcm10y, start=c(1998, 2))
+tcm10y.training <- window(tcm10y, end=c(1998,1))
+
+plot(tcm10y.training)
+acf(tcm10y.training)
+pacf(tcm10y.test)
+```
+
+A série claramente não é estacionaria.
+
+1. ACF: Os valores demoram a cair para 0 mostrando que a série não é estacionária e deve ser diferenciada.
+2. PACF: Quando o primeiro valor é proximo de um e os demais estão entre a linha crítica é sinal de que a série deve ser diferenciada.
+
+```{r}
+(tcm10y.training.lambda <- BoxCox.lambda(tcm10y.training))
+```
+
+O valor é proximo de 0, logo usarei log.
+
+```{r}
+plot(log(tcm10y.training))
+Acf(log(tcm10y.training))
+Pacf(log(tcm10y.training))
+tcm10y.diff <- diff(log(tcm10y.training))
+plot(tcm10y.diff)
+Acf(tcm10y.diff, lag.max = 100)
+#abline(v=11, col="red")
+#abline(v=23, col="red")
+#abline(v=35, col="red")
+Pacf(tcm10y.diff, lag.max = 100)
+```
+
+Uma diferenciação foi o suficiente para deixar a série estacionaria.
+
+A Série sugere um modelo ARIMA(1,1,0) [Pico alto no PACF no lag 1].
+
+Outros possiveis modelos: ARIMA(0,1,1), ARIMA(1,1,1), ARIMA(2,1,0).
+
+```{r}
+tcm10y.training.f1 <- Arima(tcm10y.training, c(1,1,0), lambda=0)
+tcm10y.training.f2 <- Arima(tcm10y.training, c(0,1,1), lambda=0)
+tcm10y.training.f3 <- Arima(tcm10y.training, c(1,1,1), lambda=0)
+tcm10y.training.f4 <- Arima(tcm10y.training, c(2,1,0), lambda=0)
+tcm10y.training.f5 <- Arima(tcm10y.training, c(2,1,1), lambda=0)
+
+c(tcm10y.training.f1$aicc, tcm10y.training.f2$aicc, tcm10y.training.f3$aicc, tcm10y.training.f4$aicc, tcm10y.training.f5$aicc)
+```
+
+O modelo mais efetivo segundo aicc é o modelo ARIMA(1,1,1)
+
+Checando os resíduos
+
+```{r}
+tsdisplay(tcm10y.training.f3$residuals)
+hist(tcm10y.training.f3$residuals)
+Box.test(tcm10y.training.f3$residuals, type="Lj")
+```
+
+Parece ser white-noise e estão normalmente distribuidos.
+
+Conferindo o que auto.arima sugere:
+
+```{r}
+(tcm10y.training.aur <- auto.arima(tcm10y.training, lambda=0))
+```
+
+Auto-arima sugere um modelo sazonal com lag 12, o que não foi necessarimaente identificado por mim. aicc do auto arima deu menos que o modelo sugerido. Segue os testes para ver qual modelo se adequa melhor.
+
+```{r}
+tcm10y.training.fcast1 <- forecast(tcm10y.training.f3, h=20)
+tcm10y.training.fcast_aur <- forecast(tcm10y.training.aur, h=20)
+plot(tcm10y.training.fcast1, xlim=c(1990, 2000))
+lines(tcm10y.training.fcast_aur$mean, col="red")
+lines(tcm10y.test, col="darkgreen")
+legend("topleft",lty=1, col=c("blue","red", "darkgreen"), c("ARIMA(1,1,1)", "ARIMA(0,1,1)(1,0,0)", "Test set"))
+```
+
+Ambos produziram um forecast extremamente parecido...
+
+> c) n Exercise 4.1 0, you were asked to use simple exponential smoothing with $\alpha = 0.2$ to smooth the data, and to forecast the last 20 observations. Compare the ARIMA and exponential smoothing forecasts. Which forecasting method do you prefer?
+
+Usando exponential smoothing...
+
+```{r}
+tcm10y.training.fcast_ses <- ses(tcm10y.training, initial="optimal", alpha=0.2, h=20)
+
+plot(tcm10y.training.fcast1, xlim=c(1990, 2000))
+lines(tcm10y.training.fcast_ses$mean, col="red")
+lines(tcm10y.test, col="darkgreen")
+legend("topleft",lty=1, col=c("blue","red", "darkgreen"), c("ARIMA(1,1,1)", "ses", "Test set"))
+```
+
+ARIMA foi mais efetivo que ses.
