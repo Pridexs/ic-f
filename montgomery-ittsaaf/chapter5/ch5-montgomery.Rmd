@@ -111,3 +111,44 @@ legend("topleft",lty=1, col=c("blue","red", "darkgreen"), c("ARIMA(1,1,1)", "ses
 ```
 
 ARIMA foi mais efetivo que ses.
+
+### 5.13 Table B.4 contains data on the annual U.S. production of blue and gorgonzola cheeses.
+
+> a. Fit an ARIMA model to this time series, excluding the last I 0 observations. Investigate model adequacy. Explain how this model would be used for forecasting.
+
+```{r}
+uscheesecsv <- read.csv("/home/apm/git/forecasting-exercises/montgomery-ittsaaf/chapter5/tableb4_uscheese.csv", header=TRUE, sep=",")
+uscheesecsv[,1]
+uscheese <- ts(uscheesecsv[,2], start=c(1950), frequency = 1)
+
+uscheese.test <- window(uscheese, start=c(1988))
+uscheese.training <- window(uscheese, end=c(1987))
+
+
+(uscheese.training.lambda <- BoxCox.lambda(uscheese.training))
+
+uscheese.training.boxcox <- BoxCox(uscheese.training, lambda = uscheese.training.lambda)
+
+tsdisplay(uscheese.training.boxcox)
+```
+
+A série claramente precisa ser diferenciada...
+
+```{r}
+plot(diff(uscheese.training.boxcox))
+Acf(diff(uscheese.training.boxcox), lag.max=100)
+Pacf(diff(uscheese.training.boxcox), lag.max=100)
+
+auto.arima(uscheese.training, lambda=uscheese.training.lambda)
+```
+
+Uma diferenciacao pareceu ser suficiente.
+
+```{r}
+Arima(uscheese.training, c(0,1,0), lambda=uscheese.training.lambda)
+#Arima(uscheese.training, c(9,1,0), lambda=uscheese.training.lambda)
+#Arima(uscheese.training, c(0,1,9), lambda=uscheese.training.lambda)
+#Arima(uscheese.training, c(0,1,10), lambda=uscheese.training.lambda)
+
+
+```
