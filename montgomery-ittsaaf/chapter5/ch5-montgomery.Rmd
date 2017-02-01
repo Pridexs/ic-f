@@ -115,6 +115,7 @@ ARIMA foi mais efetivo que ses.
 ### 5.13 Table B.4 contains data on the annual U.S. production of blue and gorgonzola cheeses.
 
 > a. Fit an ARIMA model to this time series, excluding the last I 0 observations. Investigate model adequacy. Explain how this model would be used for forecasting.
+> b. Forecast the last 10 observations
 
 ```{r}
 uscheesecsv <- read.csv("/home/apm/git/forecasting-exercises/montgomery-ittsaaf/chapter5/tableb4_uscheese.csv", header=TRUE, sep=",")
@@ -138,17 +139,61 @@ A série claramente precisa ser diferenciada...
 plot(diff(uscheese.training.boxcox))
 Acf(diff(uscheese.training.boxcox), lag.max=100)
 Pacf(diff(uscheese.training.boxcox), lag.max=100)
-
-auto.arima(uscheese.training, lambda=uscheese.training.lambda)
 ```
 
 Uma diferenciacao pareceu ser suficiente.
 
+O ACF e o PACF não parecem mostrar dados muito concretos para aplicar o modelo AR ou MA.
+
 ```{r}
-Arima(uscheese.training, c(0,1,0), lambda=uscheese.training.lambda)
-#Arima(uscheese.training, c(9,1,0), lambda=uscheese.training.lambda)
-#Arima(uscheese.training, c(0,1,9), lambda=uscheese.training.lambda)
-#Arima(uscheese.training, c(0,1,10), lambda=uscheese.training.lambda)
+uscheese.fit1 <- Arima(uscheese.training, c(0,1,0), lambda=uscheese.training.lambda, include.drift = TRUE)
 
+uscheese.fcast1 <- forecast(uscheese.fit1, h=10)
+?forecast
+plot(uscheese.fcast1)
+lines(uscheese.test, col="darkgreen")
+```
 
+> d. How would prediction intervals be obtained for the ARIMA forecasts?
+
+https://www.otexts.org/fpp/2/7
+https://www.otexts.org/fpp/8/8#forecast-intervals
+
+* !!! É necessario terminar essa parte. Incompleta !!! *
+
+Para 95%:
+
+```{r}
+uscheese.fcast1
+uscheese.fcast1$mean[1] + (1.96 * sd(uscheese.fcast1$residuals))
+```
+
+## 5.39
+
+> An ARIMA model has been fit to a time series, resulting in
+> $ŷ_t = 25 + 0.35y_{t-1} + \xi_t$
+
+> a) Suppose that we are at time period $T = 100$ and $y_{100} = 31$. Determine forecasts for periods 101, 102, 103, ... from this model at origin 100.
+
+AR(1)
+
+```{r}
+e <- rnorm(50)
+y <- ts(numeric(50))
+y[1] = 31
+for(i in 2:50) {
+  y[i] <- 25 + 0.35*y[i-1] + e[i]
+}
+plot(y)
+
+```
+
+> c) Suppose that the observation for time period 101 turns out to be $y_{101} = 33$. Revise your forecasts for periods 102, 103, ... using period 101 as the new origin of time.
+
+```{r}
+y[2] = 33
+for(i in 3:50) {
+  y[i] <- 25 + 0.35*y[i-1] + e[i]
+}
+plot(y)
 ```
