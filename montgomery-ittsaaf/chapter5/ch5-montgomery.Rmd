@@ -62,7 +62,6 @@ tcm10y.training.f4 <- Arima(tcm10y.training, c(2,1,0), lambda=0)
 tcm10y.training.f5 <- Arima(tcm10y.training, c(2,1,1), lambda=0)
 tcm10y.training.autoarima <- auto.arima(tcm10y.training, lambda=0, stepwise=FALSE, seasonal=FALSE)
 
-
 c(tcm10y.training.f1$aicc, tcm10y.training.f2$aicc, tcm10y.training.f3$aicc, tcm10y.training.f4$aicc, tcm10y.training.f5$aicc, tcm10y.training.autoarima$aicc)
 ```
 
@@ -103,7 +102,7 @@ legend("topleft",lty=1, col=c("blue","red", "darkgreen"), c("Previsão fora da a
 
 Resultado foi adequado
 
-> c) n Exercise 4.1 0, you were asked to use simple exponential smoothing with $\alpha = 0.2$ to smooth the data, and to forecast the last 20 observations. Compare the ARIMA and exponential smoothing forecasts. Which forecasting method do you prefer?
+> c) In Exercise 4.1 0, you were asked to use simple exponential smoothing with $\alpha = 0.2$ to smooth the data, and to forecast the last 20 observations. Compare the ARIMA and exponential smoothing forecasts. Which forecasting method do you prefer?
 
 Usando exponential smoothing...
 
@@ -164,13 +163,21 @@ lines(uscheese.test, col="darkgreen")
 https://www.otexts.org/fpp/2/7
 https://www.otexts.org/fpp/8/8#forecast-intervals
 
-* !!! É necessario terminar essa parte. Incompleta !!! *
-
-Para 95%:
+O método utilizado na função é um pouco mais complicado.
 
 ```{r}
-uscheese.fcast1
-uscheese.fcast1$mean[1] + (1.96 * sd(uscheese.fcast1$residuals))
+lo.90 <- hi.90 <- lo.95 <- hi.95 <- c()
+for (i in 1:10) {
+  lo.90[i] <- uscheese.fcast1$mean[i] - qnorm(0.95) * sd(resid(uscheese.fit1))
+  hi.90[i] <- uscheese.fcast1$mean[i] + qnorm(0.95) * sd(resid(uscheese.fit1))
+  lo.95[i] <- uscheese.fcast1$mean[i] - qnorm(0.975) * sd(resid(uscheese.fit1))
+  hi.95[i] <- uscheese.fcast1$mean[i] + qnorm(0.975) * sd(resid(uscheese.fit1))
+}
+
+lo.90
+hi.90
+lo.95
+hi.95
 ```
 
 ## 5.39
