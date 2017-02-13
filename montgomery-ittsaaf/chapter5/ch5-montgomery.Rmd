@@ -38,15 +38,13 @@ A série claramente não é estacionaria.
 O valor é proximo de 0, logo usarei log.
 
 ```{r}
+plot(tcm10y.training)
 plot(log(tcm10y.training))
 Acf(log(tcm10y.training))
 Pacf(log(tcm10y.training))
 tcm10y.diff <- diff(log(tcm10y.training))
 plot(tcm10y.diff)
 Acf(tcm10y.diff, lag.max = 100)
-#abline(v=11, col="red")
-#abline(v=23, col="red")
-#abline(v=35, col="red")
 Pacf(tcm10y.diff, lag.max = 100)
 ```
 
@@ -62,40 +60,48 @@ tcm10y.training.f2 <- Arima(tcm10y.training, c(0,1,1), lambda=0)
 tcm10y.training.f3 <- Arima(tcm10y.training, c(1,1,1), lambda=0)
 tcm10y.training.f4 <- Arima(tcm10y.training, c(2,1,0), lambda=0)
 tcm10y.training.f5 <- Arima(tcm10y.training, c(2,1,1), lambda=0)
+tcm10y.training.autoarima <- auto.arima(tcm10y.training, lambda=0, stepwise=FALSE, seasonal=FALSE)
 
-c(tcm10y.training.f1$aicc, tcm10y.training.f2$aicc, tcm10y.training.f3$aicc, tcm10y.training.f4$aicc, tcm10y.training.f5$aicc)
+
+c(tcm10y.training.f1$aicc, tcm10y.training.f2$aicc, tcm10y.training.f3$aicc, tcm10y.training.f4$aicc, tcm10y.training.f5$aicc, tcm10y.training.autoarima$aicc)
 ```
 
-O modelo mais efetivo segundo aicc é o modelo ARIMA(1,1,1)
+O modelo mais efetivo segundo aicc é o modelo sugerido pelo autoarima (0,1,2)
 
 Checando os resíduos
 
 ```{r}
-tsdisplay(tcm10y.training.f3$residuals)
+tsdisplay(tcm10y.training.autoarima$residuals)
 hist(tcm10y.training.f3$residuals)
 Box.test(tcm10y.training.f3$residuals, type="Lj")
 ```
 
 Parece ser white-noise e estão normalmente distribuidos.
 
-Conferindo o que auto.arima sugere:
+> Equacao para ARIMA(1,1,1):
+
+$$
+(1 + 0.1326B)(1 - B)y_t = (1 + 0.6009B)e_t\\
+(1 - B + 0.1326B - 0.1326B^2 )y_t = e_t + 0.6009Be_t\\
+y_t - By_t + 0.1326By_t - 0.1326B^2y_t = e_t + 0.6009Be_t\\
+y_t - y_{t-1} + 0.1326y_{t-1} - 0.1326y_{t-2} = e_t + 0.6009e_{t-1}\\
+y_t = e_t + 0.6009e_{t-1} + y_{t-1} - 0.1325y_{t-1} + 0.1326y_{t-2}\\
+y_t = e_t + 0.4684y_{t-1} + 0.1326y_{t-2}
+$$
+
+> b) Gerando previsões para as últimas observações:
 
 ```{r}
-(tcm10y.training.aur <- auto.arima(tcm10y.training, lambda=0))
-```
+tcm10y.fcast1 <- forecast(tcm10y.training.autoarima, h=20)
+tcm10y.fcast2 <- Arima(tcm10y.test, model=tcm10y.training.autoarima)
 
-Auto-arima sugere um modelo sazonal com lag 12, o que não foi necessarimaente identificado por mim. aicc do auto arima deu menos que o modelo sugerido. Segue os testes para ver qual modelo se adequa melhor.
-
-```{r}
-tcm10y.training.fcast1 <- forecast(tcm10y.training.f3, h=20)
-tcm10y.training.fcast_aur <- forecast(tcm10y.training.aur, h=20)
-plot(tcm10y.training.fcast1, xlim=c(1990, 2000))
-lines(tcm10y.training.fcast_aur$mean, col="red")
+plot(tcm10y.fcast1, xlim=c(1996, 2000))
+lines(fitted(tcm10y.fcast2), col="red")
 lines(tcm10y.test, col="darkgreen")
-legend("topleft",lty=1, col=c("blue","red", "darkgreen"), c("ARIMA(1,1,1)", "ARIMA(0,1,1)(1,0,0)", "Test set"))
+legend("topleft",lty=1, col=c("blue","red", "darkgreen"), c("Previsão fora da amostra", "Previsão 1 passo a frente", "Test set"))
 ```
 
-Ambos produziram um forecast extremamente parecido...
+Resultado foi adequado
 
 > c) n Exercise 4.1 0, you were asked to use simple exponential smoothing with $\alpha = 0.2$ to smooth the data, and to forecast the last 20 observations. Compare the ARIMA and exponential smoothing forecasts. Which forecasting method do you prefer?
 
@@ -104,7 +110,7 @@ Usando exponential smoothing...
 ```{r}
 tcm10y.training.fcast_ses <- ses(tcm10y.training, initial="optimal", alpha=0.2, h=20)
 
-plot(tcm10y.training.fcast1, xlim=c(1990, 2000))
+plot(tcm10y.fcast1, xlim=c(1990, 2000))
 lines(tcm10y.training.fcast_ses$mean, col="red")
 lines(tcm10y.test, col="darkgreen")
 legend("topleft",lty=1, col=c("blue","red", "darkgreen"), c("ARIMA(1,1,1)", "ses", "Test set"))
@@ -149,7 +155,6 @@ O ACF e o PACF não parecem mostrar dados muito concretos para aplicar o modelo 
 uscheese.fit1 <- Arima(uscheese.training, c(0,1,0), lambda=uscheese.training.lambda, include.drift = TRUE)
 
 uscheese.fcast1 <- forecast(uscheese.fit1, h=10)
-?forecast
 plot(uscheese.fcast1)
 lines(uscheese.test, col="darkgreen")
 ```
@@ -179,7 +184,8 @@ AR(1)
 
 ```{r}
 e <- rnorm(50)
-y <- ts(numeric(50))
+y <- ts(numeric(50), start=100)
+
 y[1] = 31
 for(i in 2:50) {
   y[i] <- 25 + 0.35*y[i-1] + e[i]
